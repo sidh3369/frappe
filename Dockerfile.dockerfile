@@ -1,10 +1,10 @@
 FROM frappe/frappe-worker:latest
 
-WORKDIR /home/frappe/frappe-bench
-
-# Create the expected Python path
+# Ensure the expected Python path exists for Render's build environment
 RUN mkdir -p /opt/render/project/src/env/bin && \
     ln -sf $(which python) /opt/render/project/src/env/bin/python
+
+WORKDIR /home/frappe/frappe-bench
 
 # Copy application code
 COPY --chown=frappe:frappe . /home/frappe/frappe-bench/apps/hrms
