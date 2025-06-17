@@ -1,32 +1,52 @@
 services:
   - type: web
-    name: frappe-hr-web
-    env: python
-    buildCommand: pip install -e .
-    startCommand: bench start
+    name: frappe-hr
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    healthCheckPath: /
     envVars:
-      - key: PYTHONPATH
-        value: .
-      - key: FRAPPE_SITE
-        value: your-site.localhost
-      - key: FRAPPE_DEVELOPER_MODE
-        value: 1
+      - key: REDIS_CACHE
+        fromService:
+          name: redis
+          type: redis
+          property: host
+      - key: REDIS_QUEUE
+        fromService:
+          name: redis
+          type: redis
+          property: host
+      - key: REDIS_SOCKETIO
+        fromService:
+          name: redis
+          type: redis
+          property: host
+    disk:
+      name: frappe-files
+      mountPath: /home/frappe/frappe-bench/sites/site1.local/public/files
+      sizeGB: 10
+
+  - type: worker
+    name: frappe-worker
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: standard
+    envVars:
+      - fromService:
+          name: frappe-hr
+          type: web
+          envVarKey: REDIS_CACHE
+      - fromService:
+          name: frappe-hr
+          type: web
+          envVarKey: REDIS_QUEUE
+      - fromService:
+          name: frappe-hr
+          type: web
+          envVarKey: REDIS_SOCKETIO
+    command: bench worker --queue default
 
   - type: redis
-    name: frappe-hr-redis
+    name: redis
     ipAllowList: []
     plan: free
-
-  - type: pserv
-    name: frappe-hr-worker
-    env: python
-    buildCommand: pip install -e .
-    startCommand: bench worker
-    envVars:
-      - key: PYTHONPATH
-        value: .
-      - key: REDIS_URL
-        fromService:
-          type: redis
-          name: frappe-hr-redis
-          property: connectionString
