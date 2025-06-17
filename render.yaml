@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: frappe-hr-web
+    env: python
+    buildCommand: pip install -e .
+    startCommand: bench start
+    envVars:
+      - key: PYTHONPATH
+        value: .
+      - key: FRAPPE_SITE
+        value: your-site.localhost
+      - key: FRAPPE_DEVELOPER_MODE
+        value: 1
+
+  - type: redis
+    name: frappe-hr-redis
+    ipAllowList: []
+    plan: free
+
+  - type: pserv
+    name: frappe-hr-worker
+    env: python
+    buildCommand: pip install -e .
+    startCommand: bench worker
+    envVars:
+      - key: PYTHONPATH
+        value: .
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: frappe-hr-redis
+          property: connectionString
