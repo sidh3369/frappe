@@ -6,6 +6,10 @@ set -e
 python3 -m venv /opt/render/project/src/.venv_bench
 source /opt/render/project/src/.venv_bench/bin/activate
 
+# Create the expected directory and symbolic link for python, pointing to the venv's python
+mkdir -p /opt/render/project/src/env/bin
+ln -sf /opt/render/project/src/.venv_bench/bin/python /opt/render/project/src/env/bin/python
+
 # Install bench into the virtual environment
 /opt/render/project/src/.venv_bench/bin/pip install frappe-bench
 
