@@ -1,40 +1,43 @@
-#!/bin/bash
+#!/usr/bin/env bash
+# Exit immediately if a command exits with a non-zero status.
+set -e
 
-# Create a symlink to the correct Python location
+# Create the expected directory and symbolic link for python
 mkdir -p /opt/render/project/src/env/bin
 ln -sf $(which python) /opt/render/project/src/env/bin/python
 
-# Initialize Frappe bench
-bench init --frappe-path=https://github.com/frappe/frappe --frappe-branch=version-14 frappe-bench
+# Install bench
+pip install frappe-bench
+
+# Initialize bench
+bench init --skip-redis-config-generation --skip-assets-setup --frappe-path https://github.com/frappe/frappe --no-procfile --python $(which python) frappe-bench
 cd frappe-bench
 
-# Configure database and Redis
-bench set-config -g db_host $DB_HOST
-bench set-config -g db_port $DB_PORT
-bench set-config -g db_name $DB_NAME
-bench set-config -g db_password $DB_PASSWORD
-
-bench set-config -g redis_cache "redis://${REDIS_CACHE}:6379"
-bench set-config -g redis_queue "redis://${REDIS_QUEUE}:6379"
-bench set-config -g redis_socketio "redis://${REDIS_SOCKETIO}:6379"
-
-# Remove redis and watch from Procfile
-sed -i '/redis/d' ./Procfile
-sed -i '/watch/d' ./Procfile
+# Configure database
+bench set-mariadb-host $DB_HOST
+bench set-redis-cache-host $REDIS_CACHE_QUEUE_HOST
+bench set-redis-queue-host $REDIS_CACHE_QUEUE_HOST
+bench set-redis-socketio-host $REDIS_SOCKETIO_HOST
 
 # Get ERPNext and HRMS apps
-bench get-app --branch version-14 erpnext https://github.com/frappe/erpnext
+bench get-app erpnext https://github.com/frappe/erpnext
 bench get-app hrms https://github.com/frappe/hrms
 
-# Create a new site
-bench new-site site1.local --mariadb-root-password $MYSQL_ROOT_PASSWORD --admin-password $ADMIN_PASSWORD
-bench --site site1.local install-app erpnext
-bench --site site1.local install-app hrms
+# Create new site
+bench new-site $SITE_NAME --mariadb-root-username $DB_USERNAME --mariadb-root-password $DB_PASSWORD --admin-password $ADMIN_PASSWORD
 
-# Set developer mode and enable scheduler
-bench --site site1.local set-config developer_mode 1
-bench --site site1.local enable-scheduler
+# Install apps
+bench --site $SITE_NAME install-app erpnext
+bench --site $SITE_NAME install-app hrms
 
-# Clear cache and start bench
-bench --site site1.local clear-cache
+# Set developer mode
+bench --site $SITE_NAME set-config developer_mode 1
+
+# Enable scheduler
+bench --site $SITE_NAME enable-scheduler
+
+# Clear cache
+bench --site $SITE_NAME clear-cache
+
+# Start bench
 bench start
