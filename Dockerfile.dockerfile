@@ -1,8 +1,6 @@
 FROM frappe/frappe-worker:latest
 
-# Ensure the expected Python path exists for Render's build environment
-RUN mkdir -p /opt/render/project/src/env/bin && \
-    ln -sf $(which python) /opt/render/project/src/env/bin/python
+
 
 WORKDIR /home/frappe/frappe-bench
 
